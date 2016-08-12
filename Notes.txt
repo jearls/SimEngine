@@ -1,0 +1,58 @@
+Notes
+
+Basic Simulation Engine usage
+  Create the Simulation Engine
+  Create the Workers, add to engine
+  Start the engine
+
+Each Worker:
+  Depending on the Simulation Engine, code appropriate methods to do the
+  simulation work.  The work method (any work method, if multiple are
+  called) should return `true` unless the Worker should immediatley be
+  removed from the simulation.
+
+The Simulation Engine includes an engine-specific Clock.  The Clock can
+  keep track of timing statistics, impose FPS restrictions, etc.
+
+------------------------------------------------------------------------
+
+Simulation Engine Implementation Notes
+
+The Simulation Engine creates a number of Task threads, independent of
+the simulation Workers.
+
+The Simulation Engine maintains three queues of Workers: `in`, `out`,
+and `new`.
+* `in` holds the Workers that will be processed during a simulation
+  Frame.
+* `out` holds the Workers that asked to continue to run for the next
+  simulation Frame.
+* `new` holds the Workers that were created during a simulation Frame.
+
+When the Simulator Engine starts up, it initializes the clock, then
+starts looping running simulation frames.
+
+Before each frame begins, the Simulation Engine pulls all Workers out of
+the `new` queue, initializes them, and adds them to the `in` queue.
+
+It then starts the frame by synchronizing with the Task threads.
+
+When a frame begins, each Task thread begins pulling Workers out of the
+`in` queue and running them through the appropriate number of phases.
+
+The Tasks synchronize with each other to ensure that all Workers finish
+one phase before going to the next.  When no Workers need to do any more
+work, the Tasks synchronize back with the Simulator Engine to end the
+frame.  At this point, any Workers who should continue in the simulation
+are in the `out` queue.
+
+After the end of the frame, the Simulation Engine swaps the `out` and
+`in` queues and runs the Clock.
+
+If the `in` queue is not empty and neither the Clock nor an external
+source stopped the simulation, the Simulation Engine loops back to start
+a new frame (including the `Before each frame begins` processing). 
+
+If any of those conditions is not true, then the Simulation Engine stops
+the simulation.  It tells the Clock and all Workers to finish, terminates
+the Task threads, and empties out all queues.
