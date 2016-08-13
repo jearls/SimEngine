@@ -21,13 +21,14 @@ Simulation Engine Implementation Notes
 The Simulation Engine creates a number of Task threads, independent of
 the simulation Workers.
 
-The Simulation Engine maintains three queues of Workers: `in`, `out`,
-and `new`.
+The Simulation Engine maintains four queues of Workers: `in`, `out`,
+`new`, and `gone`.
 * `in` holds the Workers that will be processed during a simulation
   Frame.
 * `out` holds the Workers that asked to continue to run for the next
   simulation Frame.
 * `new` holds the Workers that were created during a simulation Frame.
+* `gone` holds the Workers that should be deleted. 
 
 When the Simulator Engine starts up, it initializes the clock, then
 starts looping running simulation frames.
@@ -46,13 +47,18 @@ work, the Tasks synchronize back with the Simulator Engine to end the
 frame.  At this point, any Workers who should continue in the simulation
 are in the `out` queue.
 
-After the end of the frame, the Simulation Engine swaps the `out` and
-`in` queues and runs the Clock.
+After the end of the frame, the Simulation Engine:
+* calls `finish` on all workers in the `gone` queue and removes them
+  from the simulation
+* moves all workers in the `out` queue back to the `in` queue
+* runs the Clock
 
-If the `in` queue is not empty and neither the Clock nor an external
-source stopped the simulation, the Simulation Engine loops back to start
-a new frame (including the `Before each frame begins` processing). 
+If there are any workers in the simulation and neither the Clock nor an
+external source stopped the simulation, the Simulation Engine loops back
+to start a new frame (including the `Before each frame begins`
+processing). 
 
 If any of those conditions is not true, then the Simulation Engine stops
-the simulation.  It tells the Clock and all Workers to finish, terminates
-the Task threads, and empties out all queues.
+the simulation.  It terminates the Task threads, empties out all the
+queues, tells the Clock and all remaining Workers to finish, and removes
+the remaining Workers from the simulation.
