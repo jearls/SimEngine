@@ -12,6 +12,7 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springhaven.simengine.Clock;
 import org.springhaven.simengine.Worker;
 import org.springhaven.simengine.exceptions.BadSimulatorStateException;
 import org.springhaven.simengine.exceptions.DuplicateWorkerException;
@@ -30,31 +31,63 @@ public class BasicSimulator implements org.springhaven.simengine.Simulator, Runn
     protected ConcurrentHashMap<String, Worker> workers;
     protected ConcurrentLinkedQueue<String>     inQ, outQ, newQ, goneQ;
     protected AtomicInteger                     state;
-    protected BasicClock                             clock;
+    protected BasicClock                        clock;
     protected Log                               log              = LogFactory.getLog(BasicSimulator.class);
     protected Phaser                            frameStart, frameEnd;
     protected Phaser                            phaseStart, phaseEnd;
     protected int                               maxTaskCount;
-    protected BasicTask[]                            tasks;
+    protected BasicTask[]                       tasks;
 
     /**
-     * Create a new simulator with a specified number of worker tasks.
+     * Create a new simulator with the specified number of worker tasks and
+     * given clock.
+     * 
+     * @param maxTaskCount
+     *            the number of worker tasks to use
+     * @param clock
+     *            the clock to use
+     * @throws IllegalArgumentException
+     *             if the clock is not a subclass of {@link BasicClock}
+     */
+    public BasicSimulator(int maxTaskCount, Clock clock) throws IllegalArgumentException {
+        this.maxTaskCount = maxTaskCount;
+        this.workers = new ConcurrentHashMap<String, Worker>();
+        this.inQ = new ConcurrentLinkedQueue<String>();
+        this.outQ = new ConcurrentLinkedQueue<String>();
+        this.newQ = new ConcurrentLinkedQueue<String>();
+        this.state = new AtomicInteger(STOPPED);
+        try {
+            this.setClock(clock);
+        } catch (BadSimulatorStateException e) {
+            // will never happen
+        }
+    }
+
+    /**
+     * Create a new simulator with a single worker task and the given clock.
+     * 
+     * @param clock
+     *            the clock to use
+     * @throws IllegalArgumentException
+     *             if the clock is not a subclass of {@link BasicClock}
+     */
+    public BasicSimulator(Clock clock) throws IllegalArgumentException {
+        this(1, clock);
+    }
+    
+    /**
+     * Create a new simulator with the specified number of worker tasks and a
+     * standard clock.
      * 
      * @param maxTaskCount
      *            the number of worker tasks to use
      */
     public BasicSimulator(int maxTaskCount) {
-        this.maxTaskCount = maxTaskCount;
-        workers = new ConcurrentHashMap<String, Worker>();
-        inQ = new ConcurrentLinkedQueue<String>();
-        outQ = new ConcurrentLinkedQueue<String>();
-        newQ = new ConcurrentLinkedQueue<String>();
-        state = new AtomicInteger(STOPPED);
-        clock = new BasicClock();
+        this(maxTaskCount, new BasicClock());
     }
 
     /**
-     * Create a new simulator with a single worker task.
+     * Create a new simulator with a single worker task and a standard clock.
      */
     public BasicSimulator() {
         this(1);
@@ -208,6 +241,24 @@ public class BasicSimulator implements org.springhaven.simengine.Simulator, Runn
     @Override
     public BasicClock getClock() {
         return this.clock;
+    }
+
+    /**
+     * Tell the simulator to use a new clock.
+     * @param clock the new clock to use.  This must be a subclass of {@link BasicClock}
+     * @throws BadSimulatorStateException if the simulator is not <b>STOPPED</b>
+     * @throws IllegalArgumentException if the clock is not a subclass of BasicClock
+     * @see org.springhaven.simengine.Simulator#setClock(org.springhaven.simengine.Clock)
+     */
+    @Override
+    public void setClock(Clock clock) throws BadSimulatorStateException, IllegalArgumentException {
+        if (this.state.get() != STOPPED) {
+            throw new BadSimulatorStateException("Can only change clock in STOPPED state");
+        }
+        if (!(clock instanceof BasicClock)) {
+            throw new IllegalArgumentException("Clock must be a subclass of BasicClock");
+        }
+        this.clock = (BasicClock)clock;
     }
 
     /**

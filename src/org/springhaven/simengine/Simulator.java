@@ -173,6 +173,20 @@ public interface Simulator {
     public Clock getClock();
 
     /**
+     * Tell the simulator to use a different clock. Generally, this should only
+     * be done when the simulator is <b>STOPPED</b>.
+     * 
+     * @param clock
+     *            the new clock to use.
+     * @throws IllegalArgumentException
+     *             if the clock is not valid for this simulator.
+     * @throws BadSimulatorStateException
+     *             if the simulation state does not allow the clock to be
+     *             changed.
+     */
+    public void setClock(Clock clock) throws BadSimulatorStateException, IllegalArgumentException;
+
+    /**
      * @return the simulator log
      */
     public Log getLog();
