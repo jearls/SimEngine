@@ -80,4 +80,35 @@ public interface Clock {
      * clean-up.
      */
     public void finish();
+
+    /**
+     * Add an observer to this clock.
+     * 
+     * @param o
+     *            the ClockObserver to add
+     * @see ClockObserver
+     */
+    public void addObserver(ClockObserver o);
+
+    /**
+     * Remove an observer from this clock.
+     * 
+     * @param o
+     *            the ClockObserver to remove
+     * @see ClockObserver
+     */
+    public void deleteObserver(ClockObserver o);
+
+    /**
+     * Remove all observers from this clock.
+     * 
+     * @see ClockObserver
+     */
+    public void deleteObservers();
+
+    /**
+     * @return the number of observers
+     * @see ClockObserver
+     */
+    public int countObservers();
 }
