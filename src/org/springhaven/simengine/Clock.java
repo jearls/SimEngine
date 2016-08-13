@@ -36,6 +36,9 @@ import org.springhaven.simengine.exceptions.NoSuchStatisticException;
  */
 public interface Clock {
 
+    public final static String STAT_FRAMES = "frames";
+    public final static String STAT_FPS    = "framesPerSecond";
+
     /**
      * @param statistic
      *            the name of the <b>long</b> statistic to query
