@@ -3,10 +3,6 @@
  */
 package org.springhaven.simengine.exceptions;
 
-/**
- * @author Johnson
- *
- */
 public class SimulatorException extends Exception {
     public static final long serialVersionUID = 1L;
     
