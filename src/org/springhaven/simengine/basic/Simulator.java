@@ -4,7 +4,6 @@
 package org.springhaven.simengine.basic;
 
 import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Phaser;
@@ -30,7 +29,7 @@ public class Simulator implements org.springhaven.simengine.Simulator {
     protected ConcurrentLinkedQueue<String>     in, out, pending;
     protected AtomicInteger                     state;
     protected Clock                             clock;
-    private static Log                          log              = LogFactory.getLog(Simulator.class);
+    protected Log                               log              = LogFactory.getLog(Simulator.class);
     protected Phaser                            simulatorSync;
     protected Phaser                            phaseSync;
     protected int                               maxTaskCount;
@@ -195,7 +194,7 @@ public class Simulator implements org.springhaven.simengine.Simulator {
      */
     @Override
     public Log getLog() {
-        return log;
+        return this.log;
     }
 
     /**

@@ -5,7 +5,6 @@ package org.springhaven.simengine.basic;
 
 import org.apache.commons.logging.Log;
 import org.springhaven.simengine.Simulator;
-import org.springhaven.simengine.exceptions.NoSuchStatisticException;
 
 /**
  * @author Johnson
