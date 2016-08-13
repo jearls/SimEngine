@@ -3,6 +3,7 @@
  */
 package org.springhaven.simengine;
 
+import java.util.Enumeration;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springhaven.simengine.exceptions.NoSuchStatisticException;
@@ -12,10 +13,14 @@ import org.springhaven.simengine.exceptions.NoSuchStatisticException;
  *
  */
 public abstract class AbstractClock implements Clock {
-    public static final long serialVersionUID = 1L;
+    public static final long                           serialVersionUID = 1L;
 
-    ConcurrentHashMap<String, Long> statsLong = new ConcurrentHashMap<String, Long>();
-    ConcurrentHashMap<String, Double> statsDouble = new ConcurrentHashMap<String, Double>();
+    protected ConcurrentHashMap<String, Long>          statsLong        = new ConcurrentHashMap<String, Long>();
+    protected ConcurrentHashMap<String, Double>        statsDouble      = new ConcurrentHashMap<String, Double>();
+
+    // I really only want a ConcurrentSet...
+    protected ConcurrentHashMap<ClockObserver, Object> observers        =
+            new ConcurrentHashMap<ClockObserver, Object>();
 
     /**
      * @param statistic
@@ -55,9 +60,87 @@ public abstract class AbstractClock implements Clock {
 
     protected void setLongStatistic(String statistic, long value) {
         statsLong.put(statistic, new Long(value));
+        this.notifyLongStatisticChanged(statistic, value);
     }
-
+    
     protected void setDoubleStatistic(String statistic, double value) {
         statsDouble.put(statistic, new Double(value));
+        this.notifyDoubleStatisticChanged(statistic, value);
+    }
+
+    @Override
+    public void finish() {
+        this.notifyClockFinished();
+    }
+    
+    @Override
+    public void initialize(Simulator sim) {
+        this.notifyClockInitialized();
+    }
+
+    @Override
+    public boolean tick() {
+        this.notifyClockTicked();
+        return true;
+    }
+    
+    protected void notifyLongStatisticChanged(String statistic, long value) {
+        Enumeration<ClockObserver> e = observers.keys();
+        while (e.hasMoreElements()) {
+            ClockObserver o = e.nextElement();
+            o.longStatisticChanged(this, statistic, value);
+        }
+    }
+
+    protected void notifyDoubleStatisticChanged(String statistic, double value) {
+        Enumeration<ClockObserver> e = observers.keys();
+        while (e.hasMoreElements()) {
+            ClockObserver o = e.nextElement();
+            o.doubleStatisticChanged(this,  statistic, value);
+        }
+    }
+
+    protected void notifyClockInitialized() {
+        Enumeration<ClockObserver> e = observers.keys();
+        while (e.hasMoreElements()) {
+            ClockObserver o = e.nextElement();
+            o.clockInitialized(this);
+        }
+    }
+
+    protected void notifyClockTicked() {
+        Enumeration<ClockObserver> e = observers.keys();
+        while (e.hasMoreElements()) {
+            ClockObserver o = e.nextElement();
+            o.clockTicked(this);
+        }
+    }
+
+    protected void notifyClockFinished() {
+        Enumeration<ClockObserver> e = observers.keys();
+        while (e.hasMoreElements()) {
+            ClockObserver o = e.nextElement();
+            o.clockFinished(this);
+        }
+    }
+
+    @Override
+    public void addObserver(ClockObserver o) {
+        this.observers.put(o,  o);
+    }
+
+    @Override
+    public int countObservers() {
+        return this.observers.size();
+    }
+    
+    @Override
+    public void deleteObserver(ClockObserver o) {
+        this.observers.remove(o);
+    }
+    
+    @Override
+    public void deleteObservers() {
+        this.observers.clear();
     }
 }

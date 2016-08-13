@@ -42,6 +42,7 @@ public class BasicClock extends org.springhaven.simengine.AbstractClock {
         framesPerSecond_accum = 0L ;
         startFrame = System.currentTimeMillis() ;
         lastFrame = 0L ;
+        super.initialize(sim);
     }
 
     /**
@@ -63,7 +64,7 @@ public class BasicClock extends org.springhaven.simengine.AbstractClock {
         }
         this.frames_accum += 1;
         this.setLongStatistic(STAT_FRAMES, this.frames_accum);
-        return true;
+        return super.tick();
     }
 
     /**
@@ -73,5 +74,6 @@ public class BasicClock extends org.springhaven.simengine.AbstractClock {
      */
     @Override
     public void finish() {
+        super.finish();
     }
 }
