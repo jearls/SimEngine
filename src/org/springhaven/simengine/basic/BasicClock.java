@@ -10,7 +10,7 @@ import org.springhaven.simengine.Simulator;
  * @author Johnson
  *
  */
-public class Clock extends org.springhaven.simengine.AbstractClock {
+public class BasicClock extends org.springhaven.simengine.AbstractClock {
     public static final long serialVersionUID = 1L;
 
     Simulator sim;
@@ -24,7 +24,7 @@ public class Clock extends org.springhaven.simengine.AbstractClock {
     /**
      * 
      */
-    public Clock() {
+    public BasicClock() {
     }
 
     /**

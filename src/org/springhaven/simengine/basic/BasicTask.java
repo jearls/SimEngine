@@ -5,34 +5,35 @@ package org.springhaven.simengine.basic;
 
 import java.util.LinkedList;
 import java.util.concurrent.Phaser;
-
 import org.springhaven.simengine.Worker;
 
 /**
  * @author Johnson
  *
  */
-public class Task implements Runnable {
+public class BasicTask implements Runnable {
     public static final long serialVersionUID = 1L;
 
-    Simulator                sim;
-    Phaser                   simSync;
-    Phaser                   phaseSync;
+    BasicSimulator                sim;
+    Phaser                   frameStart, frameEnd;
+    Phaser                   phaseStart, phaseEnd;
     boolean                  stopping;
     boolean                  stopped;
 
     /**
      * @param sim
      *            the simulator controlling this task
-     * @param simSync
+     * @param frameStart
      *            the phaser synchronizing this task to the simulator
-     * @param phaseSync
+     * @param phaseStart
      *            the phaser synchronizing the tasks between work phases
      */
-    public Task(Simulator sim, Phaser simSync, Phaser phaseSync) {
+    public BasicTask(BasicSimulator sim, Phaser frameStart, Phaser frameEnd, Phaser phaseStart, Phaser phaseEnd) {
         this.sim = sim;
-        this.simSync = simSync;
-        this.phaseSync = phaseSync;
+        this.frameStart = frameStart;
+        this.frameEnd = frameEnd;
+        this.phaseStart = phaseStart;
+        this.phaseEnd = phaseEnd;
         this.stopping = false;
         this.stopped = false;
     }
@@ -65,45 +66,50 @@ public class Task implements Runnable {
         LinkedList<String> nextPhase = new LinkedList<String>();
         while (!this.stopping) {
             // synchronize at start of frame loop
-            this.simSync.arriveAndAwaitAdvance();
-            if (this.sim.in.isEmpty()) {
+            this.frameStart.arriveAndAwaitAdvance();
+            if (this.sim.inQ.isEmpty()) {
                 break;
             }
             // phase loop
-            for (int phase = 1; !(this.sim.in.isEmpty()); phase += 1) {
+            for (int phase = 1; !(this.sim.inQ.isEmpty()); phase += 1) {
                 // synchronize worker tasks at start of phase loop
-                this.phaseSync.arriveAndAwaitAdvance();
+                this.phaseStart.arriveAndAwaitAdvance();
                 // process workers loop
-                // loop infinitely, but break in the middle if we cannot get
-                // another worker from the `in` queue.
-                while (true) {
-                    // fetch the next worker, if any, from the `in` queue
-                    String workerName = this.sim.in.poll();
-                    if (workerName == null) {
-                        break;
-                    }
+                String workerName;
+                while ((workerName = this.sim.inQ.poll()) != null) {
                     Worker worker = this.sim.workers.get(workerName);
                     // run the worker. If it returns `true` (meaning it wants to
                     // keep running), add it to either the `nextPhase` queue or
                     // the simulator's `out` queue, depending on whether or not
                     // it has wants to run additional phases.
-                    if (worker.tick(phase)) {
+                    boolean keepWorking;
+                    try {
+                        keepWorking = worker.tick(phase);
+                    } catch (Exception e) {
+                        keepWorking = false;
+                        this.sim.log.fatal("Worker " + workerName + " caught exception; terminating worker!", e);
+                    }
+                    if (keepWorking) {
                         if (worker.getPhaseCount() > phase) {
                             nextPhase.add(workerName);
                         } else {
-                            this.sim.out.add(workerName);
+                            this.sim.outQ.add(workerName);
                         }
+                    } else {
+                        // the worker returned false, so move it to the `gone`
+                        // queue
+                        this.sim.goneQ.add(workerName);
                     }
                 }
                 // synchronize worker tasks at end of phase loop
-                this.phaseSync.arriveAndAwaitAdvance();
+                this.phaseEnd.arriveAndAwaitAdvance();
                 // move workers from `nextPhase` queue back to `in` queue
-                while (!nextPhase.isEmpty()) {
-                    this.sim.in.add(nextPhase.remove());
+                while ((workerName = nextPhase.poll()) != null) {
+                    this.sim.inQ.add(workerName);
                 }
             }
             // synchronize at end of frame loop
-            this.simSync.arriveAndAwaitAdvance();
+            this.frameEnd.arriveAndAwaitAdvance();
             // the simulator will do between-frame processing here...
         }
     }

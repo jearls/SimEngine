@@ -10,7 +10,7 @@ package org.springhaven.simengine.basic;
  * @author Johnson
  *
  */
-public class LimitClock extends Clock {
+public class LimitClock extends BasicClock {
     public static final long serialVersionUID = 1L;
     public static final long UNLIMITED        = -1L;
     protected long           fpsLimit;
@@ -84,7 +84,7 @@ public class LimitClock extends Clock {
     }
 
     /**
-     * <p>Call {@link Clock#tick()} but enforce the limits:</p>
+     * <p>Call {@link BasicClock#tick()} but enforce the limits:</p>
      * <ul><li>Before calling, if we've met or exceeded
      * the frames-per-second limit, sleep until we move to a new second.</li>
      * <li>After calling, if we've met or exceeded the frames limit, return <b>false</b></li>.
@@ -92,7 +92,7 @@ public class LimitClock extends Clock {
      * 
      * @return <b>true</b> if the Simulation should continue, or <b>false</b> if
      *         the Simulation should be terminated.
-     * @see org.springhaven.simengine.basic.Clock#tick()
+     * @see org.springhaven.simengine.basic.BasicClock#tick()
      */
     @Override
     public boolean tick() {
